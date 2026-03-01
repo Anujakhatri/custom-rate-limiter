@@ -1,4 +1,4 @@
-# 🚀 Custom Rate-Limited URL Shortener
+# https://www.svgrepo.com/show/19461/url-link.svg Custom Rate-Limited URL Shortener
 
 A high-performance, full-stack URL shortening application to handle scalable link generation, secure redirection, and real-time click tracking. 
 
