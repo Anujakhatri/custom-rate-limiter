@@ -1,77 +1,78 @@
-# URL Shortener – Node.js Backend API
+# 🛡️ URL Shortener Backend API
 
 A high-performance, modular REST API built with **Node.js** and **Express**. This backend serves as the core engine for our URL shortening service, handling URL persistence, advanced redirection logic, and custom-engineered rate limiting.
 
-## 🌟 Overview
-
-The backend is designed for speed, reliability, and security. It provides a robust interface for the frontend to manage links and retrieve analytics while protecting the underlying infrastructure from abuse.
-
-Key responsibilities include:
-- **URL Transformation:** Generating secure, collision-resistant aliases.
-- **Efficient Redirection:** Handling high-speed HTTP redirects with visitor logging.
-- **In-Memory Rate Limiting:** Protecting endpoints without the overhead of heavy external dependencies like Redis.
-- **Analytics Aggregation:** Processing raw click data into meaningful time-series results.
+> **Backend Core:** Secure URL transformation, real-time click tracking, in-memory rate limiting, and time-series data aggregation.
 
 ---
 
-## � System Design: Core Implementations
+## ✨ Key Features
 
-In this project, these System Design concepts are not just abstract ideas—they are implemented in the core logic of the application. Here is exactly where they live:
-
-### 1. Rate-Limiting Algorithms (Fixed Window)
-The "Fixed Window" algorithm is implemented as custom middleware to protect the backend from over-use.
-- **Location:** `backend/middleware/rateLimiter.js`
-- **How it's used:**
-  - **In-Memory Storage:** Uses a JavaScript `Map()` to store IP addresses as keys and arrays of timestamps as values.
-  - **Window Logic:** When a request hits `/api/shorten`, the code filters the timestamp array to only keep requests from the last **60 seconds**.
-  - **Enforcement:** If the array length > 5, it triggers a `429 Too Many Requests` response.
-  - **Client Feedback:** It mathematically calculates `retryAfter` (the seconds remaining until the window resets), which the React frontend uses to display the countdown.
-
-### 2. Database Schema for Analytics
-The database follows a relational, time-series logging pattern specifically designed for high-performance retrieval.
-- **Location:** `backend/models/db.js`
-- **How it's used:**
-  - **Separation of Concerns:** We don't just increment a counter on the `urls` table. Instead, we have a separate `clicks` table.
-  - **Granular Logging:** Every click creates a new row with a `timestamp` and `ip_address`. This allows us to perform any type of historical analysis later.
-  - **Relational Mapping:** A **Foreign Key** (`url_alias`) connects every click to its parent URL, ensuring data integrity (if a URL is deleted, its click history is safely removed via `ON DELETE CASCADE`).
-
-### 3. Data Transformation (Transforming Raw Logs)
-The "System Design" aspect of analytics also includes how we transform raw database growth into frontend-ready data.
-- **Location:** `backend/models/clickModel.js`
-- **The Logic:** In the `getAnalytics7Days` function, we use a specific SQL query:
-  ```sql
-  SELECT date(timestamp) as click_date, COUNT(*) as click_count
-  FROM clicks
-  WHERE url_id = ? AND timestamp >= datetime('now', '-7 days')
-  GROUP BY date(timestamp)
-  ```
-- **Why this matters:** Instead of sending 10,000 raw click records to the browser, the backend "reduces" and "aggregates" the data into a simple 7-item array. This keeps the application fast and reduces the memory load on the user's browser.
-
-#### **Summary of System Design Implementation**
-
-| Concept | Implementation File | Key Mechanism |
-| :--- | :--- | :--- |
-| **Fixed Window** | `rateLimiter.js` | IP Tracking + Timestamp Filtering |
-| **Analytics Schema** | `db.js` | Relational Clicks Table + Foreign Keys |
-| **Data Aggregation** | `clickModel.js` | SQL `GROUP BY` for Time-Series Trends |
-
----
-
-## 🛡 Logic & Problem-Solving (Additional Details)
-
-- **Base62 Encoding:** Converts database IDs into 6-character short strings (e.g., `aB3kP9`). This allows for billions of unique URL permutations without collisions.
-- **Separation of Concerns:** Business logic (Alias generation), Data access (Models), and Middleware (Rate Limiting) are strictly separated into distinct directories to maximize maintainability.
-- **Error Management:** A centralized `errorHandler.js` normalizes all server exceptions, preventing data leaks and providing predictable API feedback.
+- **🛡️ Custom Rate Limiter:** An in-memory sliding window implementation to prevent API abuse.
+- **🚀 Ultra-Fast Redirection:** High-speed URL resolution using indexed SQLite lookups.
+- **📊 Real-time Analytics:** Aggregates raw click logs into daily trends for frontend consumption.
+- **🔗 Base62 Encoding:** Generates collision-resistant, short-form aliases.
+- **📂 Clean Architecture:** Strict separation of concerns (Models, Services, Controllers, Middleware).
 
 ---
 
 ## 🛠 Tech Stack
 
-- **[Node.js](https://nodejs.org/):** Modern JavaScript runtime environment.
-- **[Express](https://expressjs.com/):** Minimalist web framework for routing and middleware.
-- **[SQLite](https://www.sqlite.org/):** Lightweight, serverless relational database for persistent storage.
-- **[Dotenv](https://www.npmjs.com/package/dotenv):** Environment variable management for secure configurations.
-- **[CORS](https://www.npmjs.com/package/cors):** Cross-Origin Resource Sharing for secure frontend-backend communication.
+![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)
+![Express](https://img.shields.io/badge/Express-000000?style=for-the-badge&logo=express&logoColor=white)
+![SQLite](https://img.shields.io/badge/SQLite-07405E?style=for-the-badge&logo=sqlite&logoColor=white)
+![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black)
+![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
+
+---
+
+## 🧠 Core Concept: Sliding Window Rate Limiting
+
+The backend uses a **Sliding Window Log** algorithm to protect the `/api/shorten` endpoint without the overhead of external databases like Redis.
+
+### How it works:
+1.  **Request Tracking:** Every incoming request is identified by the user's IP.
+2.  **In-Memory Storage:** We maintain a `Map` where the key is the IP and the value is an array of request timestamps.
+3.  **Dynamic Pruning:** For every new request, we filter (prune) timestamps older than the configured window (e.g., 60 seconds).
+4.  **Threshold Enforcement:** If the count of valid timestamps exceeds the limit (e.g., 5 requests), we reject the request with a `429 Too Many Requests` status and calculate the exact `retryAfter` time.
+
+---
+
+## 🏗️ Backend core logic
+
+### 1. In-Memory Protection (Middleware)
+We use custom middleware to intercept requests before they hit the business logic. This ensures that malicious or excessive traffic is killed at the entry point.
+*   **Example:**
+    ```javascript
+    let requests = rateLimitData.get(userIP);
+    requests = requests.filter(timestamp => now - timestamp < windowMs);
+    if (requests.length >= maxRequests) return res.status(429).json({ retryAfter });
+    ```
+*   **Why?** This keeps the database safe from spam and ensures resources are available for legitimate users.
+
+### 2. Relational Analytics (Data Layer)
+Instead of just incrementing a simple counter, we log every unique click. This allows us to provide deep insights over time.
+*   **Example (Database Schema):**
+    ```sql
+    CREATE TABLE clicks (
+      id INTEGER PRIMARY KEY,
+      url_alias TEXT,
+      timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (url_alias) REFERENCES urls(alias) ON DELETE CASCADE
+    );
+    ```
+*   **How it works:** This relational mapping ensures that if a URL is deleted, its entire click history is automatically cleaned up (Referential Integrity).
+
+### 3. Data Aggregation (SQL Grouping)
+The backend does the "heavy lifting" so the frontend doesn't have to. We aggregate thousands of click logs into a simple trend array.
+*   **Example (Query Logic):**
+    ```sql
+    SELECT date(timestamp) as click_date, COUNT(*) as click_count
+    FROM clicks
+    WHERE url_id = ? 
+    GROUP BY date(timestamp) -- Reduces raw logs to a daily count
+    ```
+*   **Result:** A lightweight JSON response that the frontend can instantly map to a chart.
 
 ---
 
@@ -81,8 +82,8 @@ The "System Design" aspect of analytics also includes how we transform raw datab
 | :--- | :---: | :---: | :--- |
 | `/api/shorten` | `POST` | `201` / `429` | Creates short URL (Protected by Rate Limiter) |
 | `/api/urls` | `GET` | `200` | Returns all links with aggregate click counts |
-| `/api/analytics/:alias` | `GET` | `200` / `404` | Returns time-series data for a specific link |
-| `/:alias` | `GET` | `302` / `404` | Redirects to original URL and logs click |
+| `/api/analytics/:alias` | `GET` | `200` / `404` | Returns daily click trends for a specific link |
+| `/:alias` | `GET` | `302` / `404` | Redirects to original URL and logs the arrival |
 
 ---
 
@@ -90,29 +91,43 @@ The "System Design" aspect of analytics also includes how we transform raw datab
 
 ```text
 backend/
- ├── config/            # DB initialization and connection
+ ├── config/            # DB initialization & setup
  ├── middleware/        # Security Layer (Rate Limiter, Error Handling)
- ├── models/            # Data Layer (SQL queries and indexing logic)
+ ├── models/            # Data Layer (SQL queries & model logic)
  ├── routes/            # Express Route definitions
  ├── services/          # Business Logic (Base62 conversion)
- ├── utils/             # Helper functions
- ├── server.js          # Main Entry point
- └── database.db        # Persistent Storage
+ ├── utils/             # Helper functions & constants
+ └── server.js          # main entry point
 ```
 
 ---
 
-## ⚙️ Setup Instructions
+## ⚙️ Quick Start
 
-### 1. Installation & Config
+### 1. Installation
+Navigate to the backend directory and install dependencies:
 ```bash
 cd backend
 npm install
-# Ensure .env exists with PORT, RATE_LIMIT, and RATE_WINDOW
 ```
 
-### 2. Startup
+### 2. Configure Environment
+Create a `.env` file or use the defaults:
+```env
+PORT=3000
+RATE_LIMIT=5        # Max requests per window
+RATE_WINDOW=60      # Window size in seconds
+```
+
+### 3. Launch Server
 ```bash
 npm run dev
 ```
-API is live at `http://localhost:3000`.
+API is live at: `http://localhost:3000`
+
+---
+
+## 🔐 Security & Performance
+- **SQL Injection Prevention:** All queries use parameterized inputs via `sqlite3`.
+- **Base62 Collisions:** We check for existing aliases before generating new ones to ensure 100% uniqueness.
+- **Index Optimization:** Database tables are indexed on the `alias` column for sub-millisecond lookups.

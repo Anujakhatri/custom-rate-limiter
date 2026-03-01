@@ -8,12 +8,22 @@ Built with a focus on robust architecture and strict API security, this applicat
 
 ## 🛠 Tech Stack
 
-| Component | Technologies |
-| :--- | :--- |
-| **Frontend** | [React 19](https://react.dev/), [Vite](https://vitejs.dev/), [Chart.js](https://www.chartjs.org/), [Lucide React](https://lucide.dev/), Vanilla CSS |
-| **Backend** | [Node.js](https://nodejs.org/), [Express](https://expressjs.com/), [SQLite](https://www.sqlite.org/), [Dotenv](https://github.com/motdotla/dotenv) |
-| **Logic** | Custom Sliding Window Rate Limiter, [Base62 Encoding](https://en.wikipedia.org/wiki/Base62) |
-| **DevOps** | [Docker](https://www.docker.com/), [Docker Compose](https://docs.docker.com/compose/) |
+### Frontend
+![React](https://img.shields.io/badge/React-20232a?style=for-the-badge&logo=react&logoColor=61DAFB)
+![Vite](https://img.shields.io/badge/vite-%23646CFF.svg?style=for-the-badge&logo=vite&logoColor=white)
+![Chart.js](https://img.shields.io/badge/chart.js-F5788D.svg?style=for-the-badge&logo=chart.js&logoColor=white)
+![Lucide](https://img.shields.io/badge/Lucide-React-FDE047?style=for-the-badge&logo=lucide&logoColor=black)
+
+### Backend
+![Node.js](https://img.shields.io/badge/Node.js-339933?style=for-the-badge&logo=nodedotjs&logoColor=white)
+![Express](https://img.shields.io/badge/Express-000000?style=for-the-badge&logo=express&logoColor=white)
+![SQLite](https://img.shields.io/badge/SQLite-07405E?style=for-the-badge&logo=sqlite&logoColor=white)
+![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black)
+
+### Logic & DevOps
+![Sliding Window](https://img.shields.io/badge/Algorithm-Sliding_Window-blue?style=for-the-badge)
+![Base62](https://img.shields.io/badge/Encoding-Base62-orange?style=for-the-badge)
+![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
 
 ---
 
