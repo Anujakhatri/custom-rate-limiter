@@ -1,0 +1,21 @@
+version: '3.8'
+services:
+  backend:
+    build: ./backend
+    container_name: url_shortener_backend
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - RATE_LIMIT=5
+      - RATE_WINDOW=60
+    # Mount the database to persist data outside the container
+    volumes:
+      - ./backend/database.db:/usr/src/app/database.db
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
