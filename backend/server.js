@@ -36,25 +36,22 @@ app.use((req, res, next) => {
 app.use(logger);
 
 // --- API Routes ---
-// We prefix the create/analytics paths with /api
 app.use('/api', urlRoutes);
 
-// We attach the redirect route to the root since short URLs look like domain.com/aB3kP9
+// redirect route to the root since short URLs look like domain.com/aB3kP9
 app.use('/', urlRoutes);
 
 // --- Centralized Error Handling ---
-// This must be the last middleware in the chain
 app.use(errorHandler);
 
 // Start the Server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log(`
-🚀 URL Shortener Backend is running!
-------------------------------------
-=> Listening on Port : ${PORT}
-=> Database: SQLite (database.db)
-=> Architecture: Clean Modular
-------------------------------------
+    console.log(`URL Shortener Backend is running!
+        ---------------------------------
+        => Listening on Port : ${PORT}
+        => Database: SQLite (database.db)
+        => Architecture: Clean Modular
+        ------------------------------------
     `);
 });
