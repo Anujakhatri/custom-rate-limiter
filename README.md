@@ -1,159 +1,99 @@
 # Custom Rate-Limited URL Shortener
 
-A high-performance, full-stack URL shortening service engineered to handle scalable link generation and real-time click tracking. 
+A high-performance, full-stack URL shortening service engineered to handle scalable link generation, secure redirection, and real-time click tracking. 
 
-Built with a focus on robust architecture and strict API security, this application actively solves the business problem of managing high-volume, potentially abusive web traffic. By implementing a custom-built, in-memory rate-limiting algorithm natively on the backend, the system prevents endpoint exhaustion and DoS vulnerabilities without relying on heavy external dependencies like Redis or third-party middleware packages.
+Built with a focus on robust architecture and strict API security, this application actively mitigates DoS vulnerabilities through a custom-built, in-memory rate-limiting engine.
 
-The platform provides users with an intuitive, dynamic dashboard to instantly shorten long URLs, securely track their entire library of active links, and visualize chronological 7-day click analytics via an interactive charting layer.
+---
+
+## 🏗 Full-Stack Architecture & Design
+
+This project is built with a deep emphasis on the **Request-Response cycle** and a strict **Separation of Concerns**. 
+
+- **Frontend (UI Layer):** Handles user interactions, state management, and real-time visualization. It is entirely decoupled from the backend's implementation details, communicating only via standardized JSON payloads.
+- **Backend (API Layer):** Manages business logic, alias generation, and data persistence. It enforces security and rate limits before any database interaction occurs.
+- **Data Layer (SQLite):** Ensures high-speed retrieval and consistent storage of URL mappings and chronological click logs.
+
+---
+
+## 🛡 Logic & Problem-Solving
+
+The system is designed to remain stable and performant under non-ideal conditions:
+- **Custom Rate-Limiting Algorithm:** Implements a **Fixed Window** strategy that tracks IP-based request frequency in-memory. This prevents endpoint exhaustion while providing clear `429 Too Many Requests` status codes to the client.
+- **Base62 Encoding:** Efficiently translates database IDs into compact, user-friendly strings, ensuring billions of unique permutations with just 6 characters.
+- **Edge Case Resilience:** 
+    - **Validation:** Both layers prevent empty or malformed URL inputs.
+    - **Self-Healing UI:** The frontend intelligently polls the API to refresh state and handles network failures gracefully without crashing.
+    - **Cooldown Management:** Programmatic locking of inputs during rate-limit windows.
+
+---
+
+## 📊 Data Integrity & Management
+
+A key challenge solved in this project is the **transformation of raw data into meaningful insights**:
+- **Schema Design:** Optimized SQLite schema with indexing on the `alias` column for sub-millisecond redirect lookups.
+- **Data Aggregation:** The backend performs complex SQL aggregations to transform thousands of individual click timestamps into a structured "7-day trend" array.
+- **Frontend Mapping:** The UI layer consumes this transformed data and maps it directly to a responsive **Chart.js** interface, ensuring performance even with high click volumes.
 
 ---
 
 ## 🛠 Tech Stack
 
-**Frontend**
-*   **React (Vite)** - UI component architecture and state management
-*   **Chart.js & React-Chartjs-2** - Data visualization for analytics 
-*   **Lucide React** - Vector iconography
-*   **Vanilla CSS** - Responsive, custom styling
-
-**Backend**
-*   **Node.js & Express** - RESTful API routing and server infrastructure
-*   **SQLite** - Lightweight, relational disk database for URL & Click persistence
-*   **Cors & Dotenv** - Cross-origin resource sharing and environment management
-
-**Infrastructure**
-*   **Docker & Docker Compose** - Containerized staging environments
+| Layer | Technologies |
+| :--- | :--- |
+| **Frontend** | React 19, Vite, Chart.js, Lucide Icons, Vanilla CSS |
+| **Backend** | Node.js, Express, SQLite, Dotenv |
+| **Security** | Custom In-Memory Rate Limiter (Fixed Window) |
+| **DevOps** | Docker, Docker Compose |
 
 ---
 
-## ✨ Features
+## 🚀 Quick Start
 
-*   **URL Shortening:** Converts any standard web URL into a secure, collision-resistant 6-character Base62 alias.
-*   **Analytics Dashboard:** Instantly view chronological, 7-day click activity mapped directly onto a responsive line chart.
-*   **High-Performance Redirection:** Natively handles `302 Found` redirects via the short alias, injecting timezone-aware logs sequentially into the database.
-*   **Self-Healing State:** The frontend intelligently polls the API to auto-refresh the master list of generated URLs and analytics.
-*   **Active Defense Mechanism:** The frontend UI programmatically locks inputs and displays visual countdowns by parsing custom `429 Too Many Requests` status payloads.
+### 1. Prerequisite
+Ensure you have [Node.js](https://nodejs.org/) installed.
 
----
+### 2. Standard Manual Setup
 
-## 🛡 Rate Limiter Implementation
-
-The API is protected by a custom **Fixed Window** rate-limiting counter, explicitly engineered in `backend/middleware/rateLimiter.js`. 
-
-### How It Works:
-1.  **Placement:** It operates as an Express middleware decorator, intercepting `POST /api/shorten` requests before they reach the controller logic.
-2.  **Tracking:** Request signatures are tracked entirely in-memory using a native JavaScript `Map()`. The map securely pairs the incoming `req.ip` string to a custom object tracking their `count` and the initial `startTime`. 
-3.  **Enforcement:** The application enforces a strict cap of **5 requests per 1-minute window**.
-4.  **Exceeding the Limit:** When an IP address fires request #6 within the 60-second window, the middleware rejects the HTTP connection, throws a `429` status code, and mathematically calculates the remaining time using `Math.ceil((windowMs - timePassed) / 1000)`. It securely transmits this exact delta back to the client as a `retryAfter` JSON property.
-5.  **Memory Cleanup:** The algorithm is inherently self-healing; when an IP's timeframe naturally expires, their record is silently deleted from the `Map()`, preventing slow memory leaks.
-
----
-
-## 🚀 Installation & Setup
-
-Ensure you have [Node.js](https://nodejs.org/) and [Docker](https://www.docker.com/) (optional) installed on your machine.
-
-### Local Development (Manual)
-
-1.  **Clone the repository:**
-    ```bash
-    git clone https://github.com/your-username/custom-rate-limiter.git
-    cd custom-rate-limiter
-    ```
-
-2.  **Set up the Backend:**
-    ```bash
-    cd backend
-    npm install
-    # Create the environment file
-    echo "PORT=3000\nRATE_LIMIT=5\nRATE_WINDOW=60000" > .env
-    # Boot the REST API
-    npm run dev 
-    ```
-
-3.  **Set up the Frontend (in a new terminal tab):**
-    ```bash
-    cd frontend
-    npm install
-    # Boot the Vite development server
-    npm run dev 
-    ```
-4. **Access the application directly at `http://localhost:5173`** 
-
-### Docker Deployment (Containerized)
-
-To spin up the entire full-stack matrix instantly via Docker Compose:
+**Terminal 1: Backend**
 ```bash
-docker-compose up --build -d
+cd backend
+npm install
+npm run dev
 ```
-*Frontend will be natively exposed at `localhost:5173` and backend at `localhost:3000`.*
+
+**Terminal 2: Frontend**
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+The application will be available at `http://localhost:5173`.
+
+### 3. Docker Deployment (Recommended)
+To spin up the entire infrastructure with one command:
+```bash
+docker-compose up --build
+```
 
 ---
 
-## 🔌 API Documentation
+## 📂 Project Structure
 
-### 1. Shorten a URL
-*   **Method:** `POST`
-*   **Route:** `/api/shorten`
-*   **Description:** Consumes a raw URL string, validates it, and generates a new Base62 alias.
-*   **Example Request Body:**
-    ```json
-    {
-      "originalUrl": "https://www.google.com/search?q=grepsr"
-    }
-    ```
-*   **Example Response Body:**
-    ```json
-    {
-      "success": true,
-      "data": {
-        "alias": "aB3kP9",
-        "shortUrl": "http://localhost:3000/aB3kP9"
-      }
-    }
-    ```
+```text
+.
+├── backend/            # Express API & SQLite Logic
+│    └── README.md      # Detailed backend docs (Logic & Integrity)
+├── frontend/           # React Dashboard & Charting
+│    └── README.md      # Detailed frontend docs (UI & State)
+├── docker-compose.yml  # Orchestration for the stack
+└── README.md           # This file
+```
 
-### 2. Retrieve All Generated URLs
-*   **Method:** `GET`
-*   **Route:** `/api/urls`
-*   **Description:** Fetches the master database array of all URLs created, appending aggregate click counts to each row.
-*   **Example Response Body:**
-    ```json
-    {
-      "success": true,
-      "data": [
-        {
-          "alias": "aB3kP9",
-          "originalUrl": "https://www.google.com",
-          "shortUrl": "http://localhost:3000/aB3kP9",
-          "totalClicks": 12,
-          "createdAt": "2026-03-01T12:00:00.000Z"
-        }
-      ]
-    }
-    ```
+---
 
-### 3. Track URL Analytics
-*   **Method:** `GET`
-*   **Route:** `/api/analytics/:alias`
-*   **Description:** Calculates the total lifetime click volume of a given alias alongside chronological analytics grouped by day over the trailing 7 days.
-*   **Example Response Body:**
-    ```json
-    {
-      "success": true,
-      "data": {
-        "shortId": "aB3kP9",
-        "originalUrl": "https://www.google.com",
-        "totalClicks": 12,
-        "clickData": [
-          { "click_date": "2026-02-28", "click_count": 5 },
-          { "click_date": "2026-03-01", "click_count": 7 }
-        ]
-      }
-    }
-    ```
+## 📖 Component Documentation
 
-### 4. Redirect User
-*   **Method:** `GET`
-*   **Route:** `/:alias`
-*   **Description:** Intercepts short URL navigation, sequentially logs the visitor data via SQL insertion, and executes a native 302 Redirection to the parent URL.
+- **[Frontend Guide](./frontend/README.md):** Detailed info on React components, state management, and charting.
+- **[Backend Guide](./backend/README.md):** Deep dive into API endpoints, database schema, and the rate-limiting algorithm.
