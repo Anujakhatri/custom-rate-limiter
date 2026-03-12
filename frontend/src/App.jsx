@@ -22,7 +22,7 @@ function App() {
   const [loadingObj, setLoadingObj] = useState({ shorten: false, analytics: false });
   const [errorObj, setErrorObj] = useState({ shorten: '', analytics: '' });
 
-  const API_URL = 'http://localhost:3000/api';
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
   // Countdown timer for rate-limit lock
   useEffect(() => {
